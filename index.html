@@ -1,218 +1,98 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>同步版午餐轉盤</title>
+    <title>午餐轉盤同步版</title>
     <style>
-        /* 頁面美化樣式 */
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-        }
-
-        .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            text-align: center;
-            width: 90%;
-            max-width: 500px;
-        }
-
-        h1 { color: #333; margin-bottom: 10px; }
-
-        .sync-btn {
-            background-color: #2196F3;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-bottom: 20px;
-            font-weight: bold;
-        }
-
-        .sync-btn:active { transform: scale(0.95); }
-
-        #storeList {
-            list-style: none;
-            padding: 0;
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 5px;
-            margin-bottom: 20px;
-        }
-
-        .store-item {
-            background: #e1f5fe;
-            padding: 5px 12px;
-            border-radius: 15px;
-            font-size: 0.8rem;
-            color: #0277bd;
-        }
-
-        .wheel-wrapper {
-            position: relative;
-            margin: 20px auto;
-            width: 300px;
-            height: 300px;
-        }
-
-        .pointer {
-            position: absolute;
-            top: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-            font-size: 30px;
-            color: #ff5252;
-        }
-
-        canvas {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
-        }
-
-        #spinBtn {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 60px;
-            height: 60px;
-            background: #333;
-            color: white;
-            border: 4px solid white;
-            border-radius: 50%;
-            cursor: pointer;
-            font-weight: bold;
-            z-index: 11;
-        }
-
-        #result {
-            margin-top: 25px;
-            color: #ff5252;
-            font-size: 1.5rem;
-            font-weight: bold;
-            min-height: 1.6em;
-        }
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; width: 350px; }
+        .sync-btn { background: #007bff; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; margin-bottom: 15px; }
+        #storeList { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-bottom: 15px; font-size: 12px; height: 60px; overflow-y: auto; }
+        .store-item { background: #e7f3ff; padding: 4px 8px; border-radius: 10px; color: #007bff; }
+        .wheel-wrapper { position: relative; width: 300px; height: 300px; margin: 0 auto; }
+        canvas { width: 100%; height: 100%; border-radius: 50%; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); }
+        .pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); z-index: 10; font-size: 24px; color: red; }
+        #spinBtn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; border-radius: 50%; background: #333; color: white; border: none; font-weight: bold; cursor: pointer; z-index: 11; }
+        #result { margin-top: 20px; font-size: 20px; font-weight: bold; color: #d9534f; min-height: 30px; }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>今天吃什麼？</h1>
-        <button class="sync-btn" onclick="fetchSheetData()">🔄 同步雲端名單</button>
-        
-        <div id="storeList">正在讀取名單...</div>
-
-        <div class="wheel-wrapper">
-            <div class="pointer">▼</div>
-            <canvas id="wheelCanvas" width="400" height="400"></canvas>
-            <button id="spinBtn" onclick="spinWheel()">GO!</button>
-        </div>
-
-        <div id="result"></div>
+<div class="container">
+    <h2>今天吃什麼？</h2>
+    <button class="sync-btn" onclick="fetchSheetData()">🔄 同步雲端名單</button>
+    <div id="storeList">載入中...</div>
+    <div class="wheel-wrapper">
+        <div class="pointer">▼</div>
+        <canvas id="wheelCanvas" width="400" height="400"></canvas>
+        <button id="spinBtn" onclick="spinWheel()">GO</button>
     </div>
+    <div id="result"></div>
+</div>
 
-    <script>
-        // --- 設定區 ---
-        // ！！！請將下方引號內的亂碼換成你的 Google 試算表 ID ！！！
-        const SHEET_ID = '190kDZpP_bmwHqwLSaY4Ak8xaIps5LfPvObgMyAIt2HY'; 
-        const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+<script>
+    // --- 這裡要改 ---
+    const SHEET_ID = '190kDZpP_bmwHqwLSaY4Ak8xaIps5LfPvObgMyAIt2HY'; 
+    // ---------------
+    const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
 
-        let stores = [];
-        const canvas = document.getElementById('wheelCanvas');
-        const ctx = canvas.getContext('2d');
-        let currentRotation = 0;
-        let isSpinning = false;
+    let stores = [];
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    let currentRotation = 0;
 
-        // 從 Google Sheets 抓取資料
-        async function fetchSheetData() {
+    async function fetchSheetData() {
+        try {
+            const res = await fetch(SHEET_URL);
+            const text = await res.text();
+            const rows = text.split('\n').slice(1);
+            stores = rows.map(r => r.replace(/"/g, '').trim()).filter(r => r !== "");
+            
             const listDiv = document.getElementById('storeList');
-            listDiv.innerText = "同步中...";
-            
-            try {
-                const response = await fetch(SHEET_URL);
-                const data = await response.text();
-                
-                // 解析 CSV 資料
-                const rows = data.split('\n').slice(1); 
-                stores = rows.map(row => row.replace(/"/g, '').trim()).filter(row => row !== "");
-                
-                if (stores.length < 2) {
-                    listDiv.innerText = "名單不足 2 個店家，請檢查試算表。";
-                } else {
-                    updateList();
-                    drawWheel();
-                }
-            } catch (error) {
-                listDiv.innerText = "讀取失敗，請檢查 ID 或發佈設定。";
-                console.error(error);
-            }
+            listDiv.innerHTML = stores.map(s => `<span class="store-item">${s}</span>`).join('');
+            drawWheel();
+        } catch (e) {
+            document.getElementById('storeList').innerText = "讀取失敗，請檢查 ID 與發佈設定";
         }
+    }
 
-        function drawWheel() {
-            const numOptions = stores.length;
-            const arcSize = (2 * Math.PI) / numOptions;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function drawWheel() {
+        const num = stores.length;
+        if (num === 0) return;
+        const arc = (2 * Math.PI) / num;
+        ctx.clearRect(0, 0, 400, 400);
+        stores.forEach((s, i) => {
+            ctx.beginPath();
+            ctx.fillStyle = `hsl(${i * (360 / num)}, 70%, 60%)`;
+            ctx.moveTo(200, 200);
+            ctx.arc(200, 200, 200, i * arc, (i + 1) * arc);
+            ctx.fill();
+            ctx.save();
+            ctx.translate(200, 200);
+            ctx.rotate(i * arc + arc / 2);
+            ctx.fillStyle = "white";
+            ctx.font = "bold 20px Arial";
+            ctx.textAlign = "right";
+            ctx.fillText(s.substring(0,8), 180, 10);
+            ctx.restore();
+        });
+    }
 
-            stores.forEach((store, i) => {
-                const angle = i * arcSize;
-                ctx.beginPath();
-                ctx.fillStyle = `hsl(${i * (360 / numOptions)}, 70%, 60%)`;
-                ctx.moveTo(200, 200);
-                ctx.arc(200, 200, 200, angle, angle + arcSize);
-                ctx.fill();
+    function spinWheel() {
+        if (stores.length < 2) return;
+        currentRotation += Math.floor(Math.random() * 360) + 2880;
+        canvas.style.transform = `rotate(${currentRotation}deg)`;
+        setTimeout(() => {
+            const actual = currentRotation % 360;
+            const arc = 360 / stores.length;
+            const idx = Math.floor((360 - (actual % 360) + 270) % 360 / arc);
+            document.getElementById('result').innerText = "🎉 今天吃：" + stores[idx];
+        }, 4000);
+    }
 
-                ctx.save();
-                ctx.translate(200, 200);
-                ctx.rotate(angle + arcSize / 2);
-                ctx.textAlign = "right";
-                ctx.fillStyle = "white";
-                ctx.font = "bold 18px Arial";
-                ctx.fillText(store, 180, 10);
-                ctx.restore();
-            });
-        }
+    fetchSheetData();
+</script>
 
-        function updateList() {
-            const list = document.getElementById('storeList');
-            list.innerHTML = stores.map(s => `<span class="store-item">${s}</span>`).join('');
-        }
-
-        function spinWheel() {
-            if (isSpinning || stores.length < 2) return;
-            
-            isSpinning = true;
-            document.getElementById('result').innerText = "命運轉動中...";
-            
-            const extraDegrees = Math.floor(Math.random() * 360) + 2880; // 轉 8 圈以上
-            currentRotation += extraDegrees;
-            canvas.style.transform = `rotate(${currentRotation}deg)`;
-
-            setTimeout(() => {
-                isSpinning = false;
-                const actualDegrees = currentRotation % 360;
-                const arcSize = 360 / stores.length;
-                // 調整計算邏輯以匹配指針位置
-                const index = Math.floor((360 - (actualDegrees % 360) + 270) % 360 / arcSize);
-                document.getElementById('result').innerText = `🎉 今天吃：${stores[index]}！`;
-            }, 4000);
-        }
-
-        // 初始化
-        fetchSheetData();
-    </script>
 </body>
 </html>

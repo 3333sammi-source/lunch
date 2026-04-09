@@ -3,71 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>午餐轉盤同步版</title>
+    <title>自動同步冷卻轉盤</title>
     <style>
+        /* 頁面外觀設定 */
         body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; width: 350px; }
-        .sync-btn { background: #007bff; color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; margin-bottom: 15px; }
-        #storeList { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin-bottom: 15px; font-size: 12px; height: 60px; overflow-y: auto; }
-        .store-item { background: #e7f3ff; padding: 4px 8px; border-radius: 10px; color: #007bff; }
+        .container { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); text-align: center; width: 320px; }
+        #status { font-size: 12px; color: #aaa; margin-bottom: 20px; }
+        
+        /* 轉盤外框 */
         .wheel-wrapper { position: relative; width: 300px; height: 300px; margin: 0 auto; }
         canvas { width: 100%; height: 100%; border-radius: 50%; transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1); }
+        
+        /* 指針 */
         .pointer { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); z-index: 10; font-size: 24px; color: red; }
-        #spinBtn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 50px; height: 50px; border-radius: 50%; background: #333; color: white; border: none; font-weight: bold; cursor: pointer; z-index: 11; }
-        #result { margin-top: 20px; font-size: 20px; font-weight: bold; color: #d9534f; min-height: 30px; }
+        
+        /* GO 按鈕 */
+        #spinBtn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 55px; height: 55px; border-radius: 50%; background: #333; color: white; border: 4px solid white; font-weight: bold; cursor: pointer; z-index: 11; }
+        
+        /* 結果顯示 */
+        #result { margin-top: 25px; font-size: 22px; font-weight: bold; color: #d9534f; min-height: 30px; }
+        .note { font-size: 11px; color: #ccc; margin-top: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>午餐吃什麼？</h2>
-    <button class="sync-btn" onclick="fetchSheetData()">🔄 同步雲端名單</button>
-    <div id="storeList">載入中...</div>
+    <h2>今天吃什麼？</h2>
+    <div id="status">正在同步雲端名單...</div>
+    
     <div class="wheel-wrapper">
         <div class="pointer">▼</div>
         <canvas id="wheelCanvas" width="400" height="400"></canvas>
         <button id="spinBtn" onclick="spinWheel()">GO</button>
     </div>
+    
     <div id="result"></div>
+    <div class="note">抽中店家將自動進入 3 天冷卻期</div>
 </div>
 
 <script>
-    // --- 這裡要改 ---
-    const SHEET_ID = '190kDZpP_bmwHqwLSaY4Ak8xaIps5LfPvObgMyAIt2HY'; 
-    // ---------------
-    const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+    // ==========================================
+    // 1. 設定區：請填入你的資訊
+    // ==========================================
+    const SHEET_ID = '190kDZpP_bmwHqwLSaY4Ak8xaIps5LfPvObgMyAIt2HY'; // 貼上你的 Google 試算表 ID
+    const API_URL = 'https://script.google.com/macros/s/AKfycbzEv6B6qJ7oiBqzvlTPlonvsBH5vJ9EddUksrAW114sYVufDkjalcT9-X2-LddGz2MEJQ/exec';    // 貼上你的 Google Apps Script 網址
+    // ==========================================
 
-    let stores = [];
+    const CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+    let activeStores = [];
+    let isSpinning = false;
     const canvas = document.getElementById('wheelCanvas');
     const ctx = canvas.getContext('2d');
     let currentRotation = 0;
 
-    async function fetchSheetData() {
+    // 初始化：讀取資料並過濾
+    async function init() {
         try {
-            const res = await fetch(SHEET_URL);
+            const res = await fetch(CSV_URL);
             const text = await res.text();
-            const rows = text.split('\n').slice(1);
-            stores = rows.map(r => r.replace(/"/g, '').trim()).filter(r => r !== "");
             
-            const listDiv = document.getElementById('storeList');
-            listDiv.innerHTML = stores.map(s => `<span class="store-item">${s}</span>`).join('');
+            // 解析 CSV 並過濾冷卻時間
+            const rows = text.split('\n').map(r => r.split(','));
+            const now = new Date().getTime();
+            const threeDays = 3 * 24 * 60 * 60 * 1000;
+
+            activeStores = [];
+            for(let i = 1; i < rows.length; i++) {
+                let name = rows[i][0].replace(/"/g, '').trim();
+                let dateStr = rows[i][1] ? rows[i][1].replace(/"/g, '').trim() : "";
+                
+                if (name) {
+                    let lastTime = dateStr ? new Date(dateStr).getTime() : 0;
+                    // 如果沒日期或是已經過了三天，就加入轉盤
+                    if (now - lastTime > threeDays) {
+                        activeStores.push(name);
+                    }
+                }
+            }
+
+            if (activeStores.length < 1) {
+                document.getElementById('status').innerText = "所有店家都在冷卻中！";
+            } else {
+                document.getElementById('status').innerText = `同步成功 (可選：${activeStores.length})`;
+            }
             drawWheel();
         } catch (e) {
-            document.getElementById('storeList').innerText = "讀取失敗，請檢查 ID 與發佈設定";
+            document.getElementById('status').innerText = "讀取失敗，請檢查網路或 ID";
         }
     }
 
+    // 繪製轉盤圖形
     function drawWheel() {
-        const num = stores.length;
-        if (num === 0) return;
+        const num = activeStores.length;
+        if (num === 0) {
+            ctx.clearRect(0, 0, 400, 400);
+            return;
+        }
         const arc = (2 * Math.PI) / num;
         ctx.clearRect(0, 0, 400, 400);
-        stores.forEach((s, i) => {
+        activeStores.forEach((s, i) => {
             ctx.beginPath();
             ctx.fillStyle = `hsl(${i * (360 / num)}, 70%, 60%)`;
             ctx.moveTo(200, 200);
             ctx.arc(200, 200, 200, i * arc, (i + 1) * arc);
             ctx.fill();
+            
+            // 繪製文字
             ctx.save();
             ctx.translate(200, 200);
             ctx.rotate(i * arc + arc / 2);
@@ -79,19 +120,40 @@
         });
     }
 
+    // 旋轉邏輯
     function spinWheel() {
-        if (stores.length < 2) return;
+        if (isSpinning || activeStores.length < 1) return;
+        
+        isSpinning = true;
+        document.getElementById('result').innerText = "命運挑選中...";
+        
+        // 隨機旋轉 8 圈以上
         currentRotation += Math.floor(Math.random() * 360) + 2880;
         canvas.style.transform = `rotate(${currentRotation}deg)`;
-        setTimeout(() => {
+
+        setTimeout(async () => {
             const actual = currentRotation % 360;
-            const arc = 360 / stores.length;
+            const arc = 360 / activeStores.length;
             const idx = Math.floor((360 - (actual % 360) + 270) % 360 / arc);
-            document.getElementById('result').innerText = "🎉 今天吃：" + stores[idx];
+            const winner = activeStores[idx];
+            
+            document.getElementById('result').innerText = "🎉 今天吃：" + winner;
+
+            // ⚠️ 自動傳送抽中結果到雲端 API
+            try {
+                await fetch(`${API_URL}?store=${encodeURIComponent(winner)}`, { method: 'POST' });
+            } catch (e) {
+                console.log("雲端紀錄失敗");
+            }
+
+            isSpinning = false;
+            // 5 秒後自動刷新名單，剛抽中的店家會消失
+            setTimeout(init, 5000);
         }, 4000);
     }
 
-    fetchSheetData();
+    // 啟動程式
+    init();
 </script>
 
 </body>

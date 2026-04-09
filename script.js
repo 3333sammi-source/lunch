@@ -1,5 +1,5 @@
 // 【修改這裡】放入你的 Google 試算表 ID
-const SHEET_ID = '190kDZpP_bmwHqwLSaY4Ak8xaIps5LfPvObgMyAIt2HY; 
+const SHEET_ID = '190kDZpP_bmwHqwLSaY4Ak8xaIps5LfPvObgMyAIt2HY'; 
 const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
 
 let stores = [];

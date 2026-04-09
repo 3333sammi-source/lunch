@@ -3,28 +3,113 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>吃什麼吃什麼</title>
-    <link rel="stylesheet" href="style.css">
+    <title>同步版午餐轉盤</title>
+    <style>
+        /* 頁面美化樣式 */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        h1 { color: #333; margin-bottom: 10px; }
+
+        .sync-btn {
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .sync-btn:active { transform: scale(0.95); }
+
+        #storeList {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+
+        .store-item {
+            background: #e1f5fe;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            color: #0277bd;
+        }
+
+        .wheel-wrapper {
+            position: relative;
+            margin: 20px auto;
+            width: 300px;
+            height: 300px;
+        }
+
+        .pointer {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            font-size: 30px;
+            color: #ff5252;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+        }
+
+        #spinBtn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            background: #333;
+            color: white;
+            border: 4px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 11;
+        }
+
+        #result {
+            margin-top: 25px;
+            color: #ff5252;
+            font-size: 1.5rem;
+            font-weight: bold;
+            min-height: 1.6em;
+        }
+    </style>
 </head>
 <body>
+
     <div class="container">
-        <h1>午餐吃什麼？</h1>
-        
-        <div class="input-section">
-            <input type="text" id="storeInput" placeholder="輸入店家名稱...">
-            <button onclick="addStore()" class="add-btn">新增</button>
-        </div>
-
-        <ul id="storeList"></ul>
-
-        <div class="wheel-wrapper">
-            <div class="pointer">▼</div>
-            <canvas id="wheelCanvas" width="400" height="400"></canvas>
-            <button id="spinBtn" onclick="spinWheel()">GO!</button>
-        </div>
-
-        <h2 id="result"></h2>
-    </div>
-    <script src="script.js"></script>
-</body>
-</html>
+        <h1>今天吃什麼？</h1>
+        <button class="sync-btn" onclick

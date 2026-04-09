@@ -1,29 +1,37 @@
-let stores = ["而且", "牛肉麵", "便利商店", "排骨飯", "義大利麵"];
+// 【修改這裡】放入你的 Google 試算表 ID
+const SHEET_ID = '190kDZpP_bmwHqwLSaY4Ak8xaIps5LfPvObgMyAIt2HY; 
+const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+
+let stores = [];
 const canvas = document.getElementById('wheelCanvas');
 const ctx = canvas.getContext('2d');
 let currentRotation = 0;
 
-// 【新增】從網址讀取資料
-function loadFromURL() {
-    const params = new URLSearchParams(window.location.search);
-    const data = params.get('list');
-    if (data) {
-        stores = data.split(',');
+// 從 Google Sheets 抓取資料
+async function fetchSheetData() {
+    try {
+        const response = await fetch(SHEET_URL);
+        const data = await response.text();
+        
+        // 解析 CSV 資料 (簡單處理：按行分開並去除引號)
+        const rows = data.split('\n').slice(1); // 跳過第一行標題
+        stores = rows.map(row => row.replace(/"/g, '').trim()).filter(row => row !== "");
+        
+        if (stores.length === 0) {
+            alert("試算表裡沒東西喔！請在 A 欄輸入店家。");
+            stores = ["請在表格輸入資料"];
+        }
+        
+        updateList();
+        drawWheel();
+    } catch (error) {
+        console.error("抓取資料失敗:", error);
+        alert("無法讀取資料，請確認試算表已「發佈到網路」。");
     }
-}
-
-// 【新增】更新網址，讓你可以分享
-function updateURL() {
-    const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + '?list=' + stores.join(',');
-    window.history.pushState({ path: newUrl }, '', newUrl);
 }
 
 function drawWheel() {
     const numOptions = stores.length;
-    if (numOptions === 0) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        return;
-    }
     const arcSize = (2 * Math.PI) / numOptions;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -46,33 +54,13 @@ function drawWheel() {
     });
 }
 
-function addStore() {
-    const input = document.getElementById('storeInput');
-    if (input.value.trim() !== "") {
-        stores.push(input.value.trim());
-        input.value = "";
-        updateList();
-        drawWheel();
-        updateURL(); // 儲存到網址
-    }
-}
-
-function removeStore(index) {
-    stores.splice(index, 1);
-    updateList();
-    drawWheel();
-    updateURL(); // 儲存到網址
-}
-
 function updateList() {
     const list = document.getElementById('storeList');
-    list.innerHTML = stores.map((s, i) => `
-        <span class="store-item">${s} <b onclick="removeStore(${i})" style="margin-left:8px; cursor:pointer">&times;</b></span>
-    `).join('');
+    list.innerHTML = stores.map(s => `<span class="store-item">${s}</span>`).join('');
 }
 
 function spinWheel() {
-    if (stores.length < 2) return alert("請至少輸入兩個選項！");
+    if (stores.length < 2) return alert("選項不足！");
     
     const extraDegrees = Math.floor(Math.random() * 360) + 1800;
     currentRotation += extraDegrees;
@@ -86,7 +74,5 @@ function spinWheel() {
     }, 4000);
 }
 
-// 初始化：先讀取網址資料，再畫圖
-loadFromURL();
-updateList();
-drawWheel();
+// 初始化：自動抓取一次資料
+fetchSheetData();

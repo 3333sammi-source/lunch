@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>午餐決定器 - 轉動你的味蕾</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>今天吃什麼？</h1>
+        
+        <div class="input-section">
+            <input type="text" id="storeInput" placeholder="輸入店家名稱...">
+            <button onclick="addStore()" class="add-btn">新增</button>
+        </div>
+
+        <ul id="storeList"></ul>
+
+        <div class="wheel-wrapper">
+            <div class="pointer">▼</div>
+            <canvas id="wheelCanvas" width="400" height="400"></canvas>
+            <button id="spinBtn" onclick="spinWheel()">GO!</button>
+        </div>
+
+        <h2 id="result"></h2>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
